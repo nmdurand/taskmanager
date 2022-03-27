@@ -1,6 +1,7 @@
 from flask import Flask
 
-from app.blueprints.routes import taskmanager_routes
+from app.models.tasks import db
+from app.blueprints.views import taskmanager_views
 from app.blueprints.api import taskmanager_api
 
 
@@ -9,14 +10,10 @@ def create_app():
 
     app.config.from_pyfile("config.py")
 
-    from app.models.tasks import db
-
     db.init_app(app)
+    db.create_all(app=app)
 
-    app.register_blueprint(taskmanager_routes)
+    app.register_blueprint(taskmanager_views)
     app.register_blueprint(taskmanager_api)
 
-    with app.app_context():
-        db.create_all()
-
-        return app
+    return app
