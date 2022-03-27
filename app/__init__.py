@@ -1,6 +1,6 @@
 from flask import Flask
 
-from app.models.tasks import db
+from app.models.task import db
 from app.blueprints.views import taskmanager_views
 from app.blueprints.api import taskmanager_api
 
