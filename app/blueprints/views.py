@@ -8,4 +8,4 @@ taskmanager_views = Blueprint(
 
 @taskmanager_views.route("/")
 def index():
-    return render_template(f"index.html", tasks=TaskService.get_all_tasks())
+    return render_template(f"index.html", tasks=TaskService.get_tasks())

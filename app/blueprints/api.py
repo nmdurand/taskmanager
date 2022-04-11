@@ -1,13 +1,13 @@
 from flask import Blueprint, request, Response, jsonify
-from app.models.task import Task
-from app.services.task import TaskService
+from marshmallow import ValidationError
+from app.services.task import TaskService, task_schema
 
 taskmanager_api = Blueprint("taskmanager_api", __name__, url_prefix="/api")
 
 
 @taskmanager_api.route("/tasks", methods=["GET"])
 def get_tasks():
-    return jsonify({"Tasks": TaskService.get_all_tasks()})
+    return jsonify({"tasks": TaskService.get_tasks()})
 
 
 @taskmanager_api.route("/task/<int:id>", methods=["GET"])
@@ -18,22 +18,56 @@ def get_task_by_id(id):
 
 @taskmanager_api.route("/task", methods=["POST"])
 def add_task():
-    request_data = request.get_json()
-    TaskService.add_task(request_data["title"])
-    response = Response("Task added", 201, mimetype="application/json")
-    return response
+    json_data = request.get_json()
+    if not json_data:
+        return {"message": "No input data provided"}, 400
+    try:
+        data = task_schema.load(json_data)
+    except ValidationError as err:
+        return err.messages, 422
+
+    try:
+        result = TaskService.add_task(data)
+        return {
+            "message": "Added new task",
+            "mimetype": "application/json",
+            "task": result,
+            "status": 201,
+        }
+    except:
+        return "Internal server error", 500
 
 
 @taskmanager_api.route("/task/<int:id>", methods=["PUT"])
 def update_task(id):
-    request_data = request.get_json()
-    TaskService.update_task(id, request_data["title"])
-    response = Response("Task Updated", status=200, mimetype="application/json")
-    return response
+    json_data = request.get_json()
+    if not json_data:
+        return {"message": "No input data provided"}, 400
+    try:
+        data = task_schema.load(json_data)
+    except ValidationError as err:
+        return err.messages, 422
+
+    try:
+        result = TaskService.update_task(id, data["title"])
+        return {
+            "message": "Updated task",
+            "mimetype": "application/json",
+            "task": result,
+            "status": 200,
+        }
+    except:
+        return "Internal server error", 500
 
 
 @taskmanager_api.route("/task/<int:id>", methods=["DELETE"])
 def remove_task(id):
-    TaskService.delete_task(id)
-    response = Response("Task Deleted", status=200, mimetype="application/json")
-    return response
+    try:
+        TaskService.delete_task(id)
+        return {
+            "message": "Task deleted",
+            "mimetype": "application/json",
+            "status": 200,
+        }
+    except:
+        return "Internal server error", 500

@@ -1,23 +1,45 @@
+from marshmallow import Schema, fields, ValidationError
+
 from app.models.task import Task, db
 
 
+class TaskSchema(Schema):
+    id = fields.Int(dump_only=True)
+    title = fields.Str()
+    created_at = fields.DateTime(dump_only=True)
+    updated_at = fields.DateTime(dump_only=True)
+
+
+task_schema = TaskSchema()
+tasks_schema = TaskSchema(many=True)
+
+
 class TaskService:
-    def add_task(_title):
-        new_task = Task(title=_title)
-        db.session.add(new_task)
+    def add_task(data):
+        task = Task(title=data["title"])
+        db.session.add(task)
         db.session.commit()
 
-    def get_all_tasks():
-        return [Task.json(task) for task in Task.query.all()]
+        return TaskService.get_task(task.id)
+
+    def get_tasks():
+        tasks = Task.query.all()
+
+        return tasks_schema.dump(tasks)
 
     def get_task(_id):
-        return [Task.json(Task.query.filter_by(id=_id).first())]
+        task = Task.query.get(_id)
+
+        return task_schema.dump(task)
 
     def update_task(_id, _title):
-        task_to_update = Task.query.filter_by(id=_id).first()
-        task_to_update.title = _title
+        task = Task.query.get(_id)
+        task.title = _title
         db.session.commit()
 
+        return TaskService.get_task(task.id)
+
     def delete_task(_id):
-        Task.query.filter_by(id=_id).delete()
+        task = Task.query.get(_id)
+        db.session.delete(task)
         db.session.commit()
