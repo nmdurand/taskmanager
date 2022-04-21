@@ -1,19 +1,29 @@
-from flask import Blueprint, request, Response, jsonify
-from marshmallow import ValidationError
-from app.services.task import TaskService, task_schema
+from flask import Blueprint, request
+from marshmallow import Schema, fields, ValidationError
+from app.services.task import TaskService
 
 taskmanager_api = Blueprint("taskmanager_api", __name__, url_prefix="/api")
 
 
+class TaskSchema(Schema):
+    id = fields.Int(dump_only=True)
+    title = fields.Str()
+    created_at = fields.DateTime(dump_only=True)
+    updated_at = fields.DateTime(dump_only=True)
+
+
+task_schema = TaskSchema()
+tasks_schema = TaskSchema(many=True)
+
+
 @taskmanager_api.route("/tasks", methods=["GET"])
 def get_tasks():
-    return jsonify({"tasks": TaskService.get_tasks()})
+    return {"tasks": tasks_schema.dump(TaskService.get_tasks())}
 
 
 @taskmanager_api.route("/task/<int:id>", methods=["GET"])
 def get_task_by_id(id):
-    return_value = TaskService.get_task(id)
-    return jsonify(return_value)
+    return task_schema.dump(TaskService.get_task(id))
 
 
 @taskmanager_api.route("/task", methods=["POST"])
@@ -28,12 +38,7 @@ def add_task():
 
     try:
         result = TaskService.add_task(data)
-        return {
-            "message": "Added new task",
-            "mimetype": "application/json",
-            "task": result,
-            "status": 201,
-        }
+        return result, 201
     except:
         return "Internal server error", 500
 
@@ -50,12 +55,7 @@ def update_task(id):
 
     try:
         result = TaskService.update_task(id, data["title"])
-        return {
-            "message": "Updated task",
-            "mimetype": "application/json",
-            "task": result,
-            "status": 200,
-        }
+        return result, 200
     except:
         return "Internal server error", 500
 
@@ -64,10 +64,6 @@ def update_task(id):
 def remove_task(id):
     try:
         TaskService.delete_task(id)
-        return {
-            "message": "Task deleted",
-            "mimetype": "application/json",
-            "status": 200,
-        }
+        return {"message": "Task deleted"}, 200
     except:
         return "Internal server error", 500
